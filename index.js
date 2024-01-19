@@ -1,6 +1,6 @@
 const express = require("express");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config();
@@ -32,7 +32,7 @@ async function run() {
 
     await client.connect();
 
-    // get ALl Pests
+    // get ALl Pests and also query for category data
     app.get("/api/v1/all-pets", async (req, res) => {
       //   query by category
       const category = req.query.category;
@@ -40,10 +40,18 @@ async function run() {
       if (category) {
         queryObj.category = category;
       }
-
       const result = await petsCollection.find(queryObj).toArray();
       res.send(result);
     });
+
+    // get bt id
+      app.get("/api/v1/all-pets/:id", async (req, res) => {
+          const id = req.params.id;
+          const query = { _id: new ObjectId(id) };
+          const result = await petsCollection.findOne(query);
+          res.send(result);
+      })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
