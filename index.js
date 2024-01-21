@@ -1,10 +1,10 @@
 const express = require("express");
-
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 require("dotenv").config();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
 // middleware
 app.use(cors());
@@ -30,11 +30,36 @@ async function run() {
     //   user Collections
     const petsCollection = client.db("petAdoptionDb").collection("allPets");
     const usersCollection = client.db("petAdoptionDb").collection("users");
+    const donationPetsCollection = client.db("petAdoptionDb").collection("donationPets");
 
     await client.connect();
 
+    // jwt relate api jwt Token Post
+    app.post("/api/v1/create-jwt-token", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.JWT_TOKEN_KEY, {
+        expiresIn: 60 * 60,
+      });
+      res.send({ token });
+    });
+
+    // Verify JWT token
+    const verifyToken = async (req, res, next) => {
+      if (!req.headers.authorization) {
+        res.status(401).send({ message: "unauthorized" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.JWT_TOKEN_KEY, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "Unauthorized" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
     // get ALl Pests and also query for category data
-    app.get("/api/v1/all-pets", async (req, res) => {
+    app.get("/api/v1/all-pets",  async (req, res) => {
       //   query by category
       const category = req.query.category;
       const name = req.query.name;
@@ -43,22 +68,24 @@ async function run() {
         queryObj.category = category;
       }
       if (name) {
-        queryObj.name = { $regex: new RegExp(name, 'i') };
+        queryObj.name = { $regex: new RegExp(name, "i") };
       }
-      const result = await petsCollection.find(queryObj).sort({date : "desc"}).toArray();
+      const result = await petsCollection
+        .find(queryObj)
+        .sort({ date: "desc" })
+        .toArray();
       res.send(result);
     });
 
     // get by id
-      app.get("/api/v1/all-pets/:id", async (req, res) => {
-          const id = req.params.id;
-          const query = { _id: new ObjectId(id) };
-          const result = await petsCollection.findOne(query);
-          res.send(result);
-      });
-    
+    app.get("/api/v1/all-pets/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petsCollection.findOne(query);
+      res.send(result);
+    });
 
-    // user create data for user not 
+    // user create data for user not
     app.post("/api/v1/users", async (req, res) => {
       const user = req.body;
       // email query:
@@ -68,13 +95,28 @@ async function run() {
         return res.send({
           message: "this user is already exists",
           insertedId: null,
-        })
-      };
+        });
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
-    })
-    
+    });
 
+
+    // get  Donation pets 
+    app.get("/api/v1/all-donate-pets", async (req, res) => {
+      const result = await donationPetsCollection.find().sort({date: "desc"}).toArray();
+      res.send(result);
+    });
+
+    // get by Single ID data
+    app.get("/api/v1/all-donate-pets/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationPetsCollection.findOne(query);
+      res.send(result);
+    });
+
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
