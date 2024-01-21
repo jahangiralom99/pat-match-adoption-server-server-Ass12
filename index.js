@@ -5,6 +5,7 @@ const port = process.env.PORT || 3000;
 require("dotenv").config();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_KEY_API);
 
 // middleware
 app.use(cors());
@@ -31,6 +32,7 @@ async function run() {
     const petsCollection = client.db("petAdoptionDb").collection("allPets");
     const usersCollection = client.db("petAdoptionDb").collection("users");
     const donationPetsCollection = client.db("petAdoptionDb").collection("donationPets");
+    const adoptionsCollection = client.db("petAdoptionDb").collection("adoptions");
 
     await client.connect();
 
@@ -85,7 +87,7 @@ async function run() {
       res.send(result);
     });
 
-    // user create data for user not
+    // user create data for user not 
     app.post("/api/v1/users", async (req, res) => {
       const user = req.body;
       // email query:
@@ -116,7 +118,31 @@ async function run() {
       res.send(result);
     });
 
+    // Adoption Pet create :
+    app.post("/api/v1/add-Adoptions", async (req, res, next) => {
+      const user = req.body;
+      const result = await adoptionsCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // stripe Payment api 
+    app.post("/api/v1/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+      });
+
+      res.send({
+        clientSecret : paymentIntent.client_secret,
+      })
+    })
     
+
+ 
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
