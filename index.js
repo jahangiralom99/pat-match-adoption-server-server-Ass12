@@ -65,7 +65,6 @@ async function run() {
     const verifyAdmin = async(req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
-      console.log(req.decoded);
       const user = await usersCollection.findOne(query);
       const isAdmin = user?.role === "admin";
       if (!isAdmin) {
@@ -92,6 +91,13 @@ async function run() {
         .toArray();
       res.send(result);
     });
+
+    // Add Pet only Admin can Do this
+    app.post("/api/v1/add-petList",verifyToken, verifyAdmin, async(req, res) => {
+      const petInfo = req.body;
+      const result = await petsCollection.insertOne(petInfo);
+      res.send(result);
+    })
 
     // get by id
     app.get("/api/v1/all-pets/:id", async (req, res) => {
