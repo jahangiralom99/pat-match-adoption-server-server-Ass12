@@ -30,6 +30,7 @@ async function run() {
   try {
     //   user Collections
     const petsCollection = client.db("petAdoptionDb").collection("allPets");
+    const photosCollection = client.db("petAdoptionDb").collection("photos");
     const usersCollection = client.db("petAdoptionDb").collection("users");
     const donationPetsCollection = client
       .db("petAdoptionDb")
@@ -79,11 +80,23 @@ async function run() {
       next();
     };
 
+    //  -----------Gallery -----------
+    app.get("/api/v1/gallery", async (req, res) => {
+      const result = await photosCollection.find().toArray();
+      res.send(result);
+    })
+
+
+    // ---------------------------PetCollection  Works Start--------------------------
+
     // get ALl Pests and also query for category data
     app.get("/api/v1/all-pets", async (req, res) => {
       //   query by category
       const category = req.query.category;
       const name = req.query.name;
+      const email = req.query.email;
+      const adopted = req.query.adopted;
+
       let queryObj = {};
       if (category) {
         queryObj.category = category;
@@ -91,9 +104,25 @@ async function run() {
       if (name) {
         queryObj.name = { $regex: new RegExp(name, "i") };
       }
+      if (email) {
+        queryObj.email = email;
+      }
+      if (adopted) {
+        queryObj.adopted = adopted;
+      }
+
       const result = await petsCollection
         .find(queryObj)
         .sort({ date: "desc" })
+        .toArray();
+      res.send(result);
+    });
+
+    // get by adoption false data
+    app.get("/api/v1/all-pet-adoption", async (req, res) => {
+      const email = req.query.email;
+      const result = await petsCollection
+        .find({ email: email, adopted: false })
         .toArray();
       res.send(result);
     });
@@ -110,7 +139,93 @@ async function run() {
       }
     );
 
-    // Pet collection Delete or 1 ID
+    //  add post for Normal user
+    app.post("/api/v1/add-petList-user", async (req, res) => {
+      const petInfo = req.body;
+      const result = await petsCollection.insertOne(petInfo);
+      res.send(result);
+    });
+
+    // update admin pet collection
+    app.patch(
+      "/api/v1/update-pet/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const petInfo = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateInfo = {
+          $set: {
+            category: petInfo.category,
+            name: petInfo.name,
+            age: petInfo.age,
+            location: petInfo.location,
+            petBio: petInfo.petBio,
+            description: petInfo.description,
+            gender: petInfo.gender,
+            color: petInfo.color,
+            size: petInfo.size,
+            vaccinated: petInfo.vaccinated,
+            date: petInfo.date,
+            image: petInfo.image,
+            blog_img: petInfo.image,
+          },
+        };
+        const result = await petsCollection.updateOne(filter, updateInfo);
+        res.send(result);
+      }
+    );
+
+    // update User  pet collection
+    app.patch("/api/v1/update-pet-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const petInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateInfo = {
+        $set: {
+          category: petInfo.category,
+          name: petInfo.name,
+          age: petInfo.age,
+          location: petInfo.location,
+          petBio: petInfo.petBio,
+          description: petInfo.description,
+          gender: petInfo.gender,
+          color: petInfo.color,
+          size: petInfo.size,
+          vaccinated: petInfo.vaccinated,
+          date: petInfo.date,
+          image: petInfo.image,
+          blog_img: petInfo.image,
+        },
+      };
+      const result = await petsCollection.updateOne(filter, updateInfo);
+      res.send(result);
+    });
+
+    // update Adoption status just For user ;
+    app.patch("/api/v1/pet-adoption-update/:id", async (req, res) => {
+      const id = req.params.id;
+      const info = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          adopted: info.adopted,
+        },
+      };
+      const result = await petsCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
+    // delete for user
+    app.delete("/api/v1/pet-deleted-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Pet collection Delete for admin
     app.delete(
       "/api/v1/pet-deleted/:id",
       verifyToken,
@@ -131,7 +246,10 @@ async function run() {
       res.send(result);
     });
 
-    // user create data for user not
+    // ---------------------------PetCollection  Works End---------------------------
+
+    // ---------------------------UserCollection  Works Start---------------------------
+    // user create data for user
     app.post("/api/v1/users", async (req, res) => {
       const user = req.body;
       // email query:
@@ -198,11 +316,24 @@ async function run() {
         res.send(result);
       }
     );
+    // ---------------------------UserCollection  Works End---------------------------
+
+    // ----------------------------donateCollection Works Start-----------------------
+    app.post("/api/v1/create-donation-pet", async (req, res) => {
+      const info = req.body;
+      const result = await donationPetsCollection.insertOne(info);
+      res.send(result);
+    });
 
     // get  Donation pets
     app.get("/api/v1/all-donate-pets", async (req, res) => {
+      const email = req.query.email;
+      let obj = {}
+      if (email) {
+        obj.email = email
+      }
       const result = await donationPetsCollection
-        .find()
+        .find(obj)
         .sort({ date: "desc" })
         .toArray();
       res.send(result);
@@ -216,10 +347,23 @@ async function run() {
       res.send(result);
     });
 
-    // Adoption Pet create :
+    // ---------------------------End Donate ----------------------
+
+
+    // -------------------Start Adoption Collection Start------------------------
+    // Adoption Pet create for user:
     app.post("/api/v1/add-Adoptions", async (req, res, next) => {
       const user = req.body;
       const result = await adoptionsCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Get Adoption for user;
+    app.get("/api/v1/pet-adoption", async (req, res) => {
+      const email = req.query.email;
+      const result = await adoptionsCollection
+        .find({ email: email })
+        .toArray();
       res.send(result);
     });
 
