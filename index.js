@@ -31,9 +31,15 @@ async function run() {
     //   user Collections
     const petsCollection = client.db("petAdoptionDb").collection("allPets");
     const usersCollection = client.db("petAdoptionDb").collection("users");
-    const donationPetsCollection = client.db("petAdoptionDb").collection("donationPets");
-    const adoptionsCollection = client.db("petAdoptionDb").collection("adoptions");
-    const paymentsCollection = client.db("petAdoptionDb").collection("payments");
+    const donationPetsCollection = client
+      .db("petAdoptionDb")
+      .collection("donationPets");
+    const adoptionsCollection = client
+      .db("petAdoptionDb")
+      .collection("adoptions");
+    const paymentsCollection = client
+      .db("petAdoptionDb")
+      .collection("payments");
 
     await client.connect();
 
@@ -61,20 +67,20 @@ async function run() {
       });
     };
 
-    // verify Admin 
-    const verifyAdmin = async(req, res, next) => {
+    // verify Admin
+    const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       const isAdmin = user?.role === "admin";
       if (!isAdmin) {
-        res.status(403).send({message : 'forbidden access'})
-      };
+        res.status(403).send({ message: "forbidden access" });
+      }
       next();
-    }
+    };
 
     // get ALl Pests and also query for category data
-    app.get("/api/v1/all-pets",  async (req, res) => {
+    app.get("/api/v1/all-pets", async (req, res) => {
       //   query by category
       const category = req.query.category;
       const name = req.query.name;
@@ -93,11 +99,29 @@ async function run() {
     });
 
     // Add Pet only Admin can Do this
-    app.post("/api/v1/add-petList",verifyToken, verifyAdmin, async(req, res) => {
-      const petInfo = req.body;
-      const result = await petsCollection.insertOne(petInfo);
-      res.send(result);
-    })
+    app.post(
+      "/api/v1/add-petList",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const petInfo = req.body;
+        const result = await petsCollection.insertOne(petInfo);
+        res.send(result);
+      }
+    );
+
+    // Pet collection Delete or 1 ID
+    app.delete(
+      "/api/v1/pet-deleted/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await petsCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
 
     // get by id
     app.get("/api/v1/all-pets/:id", async (req, res) => {
@@ -107,7 +131,7 @@ async function run() {
       res.send(result);
     });
 
-    // user create data for user not 
+    // user create data for user not
     app.post("/api/v1/users", async (req, res) => {
       const user = req.body;
       // email query:
@@ -123,8 +147,8 @@ async function run() {
       res.send(result);
     });
 
-    // user get 
-    app.get("/api/v1/users", verifyToken,verifyAdmin, async (req, res) => {
+    // user get
+    app.get("/api/v1/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -134,40 +158,53 @@ async function run() {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "forbidden access" });
-      };
+      }
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       let admin = false;
       if (user) {
-        admin = user?.role === "admin"
-      };
-      res.send({ admin })
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
     });
 
     // user update TO admin for Id----------------------
-    app.patch("/api/v1/users-update/:id", verifyToken, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const upDate = {
-        $set: {
-          role: 'admin',
-        },
-      };
-      const result = await usersCollection.updateOne(filter, upDate);
-      res.send(result);
-    });
+    app.patch(
+      "/api/v1/users-update/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const upDate = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await usersCollection.updateOne(filter, upDate);
+        res.send(result);
+      }
+    );
 
     // Deleted Users
-    app.delete("/api/v1/users-deleted/:id",verifyToken,verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await usersCollection.deleteOne(query);
-      res.send(result);
-    } )
+    app.delete(
+      "/api/v1/users-deleted/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await usersCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
 
-    // get  Donation pets 
+    // get  Donation pets
     app.get("/api/v1/all-donate-pets", async (req, res) => {
-      const result = await donationPetsCollection.find().sort({date: "desc"}).toArray();
+      const result = await donationPetsCollection
+        .find()
+        .sort({ date: "desc" })
+        .toArray();
       res.send(result);
     });
 
@@ -186,7 +223,7 @@ async function run() {
       res.send(result);
     });
 
-    // stripe Payment api 
+    // stripe Payment api
     app.post("/api/v1/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -197,19 +234,16 @@ async function run() {
       });
 
       res.send({
-        clientSecret : paymentIntent.client_secret,
-      })
-    })
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
-    // post payment info : 
+    // post payment info :
     app.post("/api/v1/create-payment-info", async (req, res) => {
       const paymentInfo = req.body;
       const result = await paymentsCollection.insertOne(paymentInfo);
       res.send(result);
-    })
-
- 
-
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
