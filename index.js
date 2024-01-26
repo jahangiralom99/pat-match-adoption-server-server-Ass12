@@ -405,8 +405,36 @@ async function run() {
       res.send(result);
     });
 
+    // Paused update Donation User  change this 
+    app.patch("/api/v1/donation-pet-pause-user/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          donate: updateInfo.donate,
+        }
+      };
+      const result = await donationPetsCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
     // UnPaused update Donation admin change this 
     app.patch("/api/v1/donation-pet-Unpause/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          donate: updateInfo.donate,
+        }
+      };
+      const result = await donationPetsCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
+    // UnPaused update Donation User change this 
+    app.patch("/api/v1/donation-pet-Unpause-user/:id", async (req, res) => {
       const id = req.params.id;
       const updateInfo = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -434,7 +462,6 @@ async function run() {
       const result = await donationPetsCollection.findOne(query);
       res.send(result);
     });
-
     // ---------------------------End Donate ----------------------
 
 
@@ -455,6 +482,10 @@ async function run() {
       res.send(result);
     });
 
+    // -----------------end Adoption Collection----------------
+
+
+    // ------------------start payment collection----------------
     // stripe Payment api
     app.post("/api/v1/create-payment-intent", async (req, res) => {
       const { price } = req.body;
@@ -477,6 +508,17 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/api/v1/payment-collection", async (req, res) => {
+      const email = req.query.email;
+      const obj = {};
+       if (email) {
+        obj.email = email
+      }
+      const result = await paymentsCollection.find(obj).toArray();
+      res.send(result);
+    })
+
+    //---------------------------------------------------------
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
