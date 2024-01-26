@@ -339,7 +339,95 @@ async function run() {
       res.send(result);
     });
 
-    // get by Single ID data
+    // get All Donation pets for admin
+    app.get("/api/v1/all-donate-pets-admin",verifyToken, verifyAdmin, async (req, res) => {
+      const email = req.query.email;
+      let obj = {}
+      if (email) {
+        obj.email = email
+      }
+      const result = await donationPetsCollection
+        .find(obj)
+        .sort({ date: "desc" })
+        .toArray();
+      res.send(result);
+    });
+
+     // update admin Donation  collection
+     app.patch("/api/v1/donation-update-pet/:id",verifyToken, verifyAdmin, async (req, res) => {
+       const id = req.params.id;
+       console.log(id);
+        const petInfo = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateInfo = {
+          $set: {
+            category: petInfo.category,
+            name: petInfo.name,
+            age: petInfo.age,
+            location: petInfo.location,
+            petBio: petInfo.petBio,
+            description: petInfo.description,
+            gender: petInfo.gender,
+            color: petInfo.color,
+            size: petInfo.size,
+            vaccinated: petInfo.vaccinated,
+            date: petInfo.date,
+            image: petInfo.image,
+            blog_img: petInfo.image,
+            amount: petInfo.amount,
+            maximum_donation: petInfo.maximum_donation
+          },
+        };
+        const result = await donationPetsCollection.updateOne(filter, updateInfo);
+        res.send(result);
+      }
+    );
+
+    // get by id for admin
+    app.get("/api/v1/donation-getBy/:id",verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationPetsCollection.findOne(query);
+      res.send(result);
+    })
+
+    // Paused update Donation admin change this 
+    app.patch("/api/v1/donation-pet-pause/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          donate: updateInfo.donate,
+        }
+      };
+      const result = await donationPetsCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
+    // UnPaused update Donation admin change this 
+    app.patch("/api/v1/donation-pet-Unpause/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          donate: updateInfo.donate,
+        }
+      };
+      const result = await donationPetsCollection.updateOne(filter, update);
+      res.send(result);
+    })
+
+    // donations pet delete for admin;
+    app.delete("/api/v1/donation-pet-delete/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationPetsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // get by Single ID data for user 
     app.get("/api/v1/all-donate-pets/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
