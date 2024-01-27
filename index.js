@@ -382,6 +382,35 @@ async function run() {
         res.send(result);
       }
     );
+     // update admin Donation  collection
+     app.patch("/api/v1/donation-update-pet-byUser/:id", async (req, res) => {
+       const id = req.params.id;
+       console.log(id);
+        const petInfo = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateInfo = {
+          $set: {
+            category: petInfo.category,
+            name: petInfo.name,
+            age: petInfo.age,
+            location: petInfo.location,
+            petBio: petInfo.petBio,
+            description: petInfo.description,
+            gender: petInfo.gender,
+            color: petInfo.color,
+            size: petInfo.size,
+            vaccinated: petInfo.vaccinated,
+            date: petInfo.date,
+            image: petInfo.image,
+            blog_img: petInfo.image,
+            amount: petInfo.amount,
+            maximum_donation: petInfo.maximum_donation
+          },
+        };
+        const result = await donationPetsCollection.updateOne(filter, updateInfo);
+        res.send(result);
+      }
+    );
 
     // get by id for admin
     app.get("/api/v1/donation-getBy/:id",verifyToken, verifyAdmin, async (req, res) => {
@@ -433,7 +462,7 @@ async function run() {
       res.send(result);
     });
 
-    // UnPaused update Donation User change this 
+    // UnPaused update Donation User-- change this 
     app.patch("/api/v1/donation-pet-Unpause-user/:id", async (req, res) => {
       const id = req.params.id;
       const updateInfo = req.body;
@@ -454,6 +483,13 @@ async function run() {
       const result = await donationPetsCollection.deleteOne(query);
       res.send(result);
     });
+    // donations pet delete for User;
+    app.delete("/api/v1/donation-pet-delete-user/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationPetsCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // get by Single ID data for user 
     app.get("/api/v1/all-donate-pets/:id", async (req, res) => {
@@ -462,6 +498,8 @@ async function run() {
       const result = await donationPetsCollection.findOne(query);
       res.send(result);
     });
+
+
     // ---------------------------End Donate ----------------------
 
 
@@ -517,7 +555,15 @@ async function run() {
       const result = await paymentsCollection.find(obj).toArray();
       res.send(result);
     })
-
+    // -------------------------------------
+    app.get("/api/v1/stats", async (req, res) => {
+      const user = await usersCollection.estimatedDocumentCount();
+      const donation = await donationPetsCollection.estimatedDocumentCount();
+      const petCollection = await petsCollection.estimatedDocumentCount();
+      res.send({
+        user, donation, petCollection
+      })
+    })
     //---------------------------------------------------------
     await client.db("admin").command({ ping: 1 });
     console.log(
