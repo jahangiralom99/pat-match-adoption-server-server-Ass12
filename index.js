@@ -42,7 +42,7 @@ async function run() {
       .db("petAdoptionDb")
       .collection("payments");
 
-    await client.connect();
+    // await client.connect();
 
     // jwt relate api jwt Token Post
     app.post("/api/v1/create-jwt-token", async (req, res) => {
@@ -565,10 +565,14 @@ async function run() {
       })
     })
     //---------------------------------------------------------
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+
+
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
+
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
