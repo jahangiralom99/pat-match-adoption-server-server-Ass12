@@ -13,7 +13,6 @@ app.use(cors());
 // body pars
 app.use(express.json());
 
-console.log();
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.e9wqxpd.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -618,10 +617,10 @@ async function run() {
     //---------------------------------------------------------
 
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
 
 
   } finally {
