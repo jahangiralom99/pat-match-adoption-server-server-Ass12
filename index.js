@@ -30,6 +30,8 @@ async function run() {
   try {
     //   user Collections
     const petsCollection = client.db("petAdoptionDb").collection("allPets");
+    const petsCartCollection = client.db("petAdoptionDb").collection("cart");
+    const petProductCollection = client.db("petAdoptionDb").collection("petProduct");
     const photosCollection = client.db("petAdoptionDb").collection("photos");
     const usersCollection = client.db("petAdoptionDb").collection("users");
     const donationPetsCollection = client
@@ -53,7 +55,7 @@ async function run() {
       res.send({ token });
     });
 
-    // Verify JWT token
+    // Verify JWT token for authenticated LocalStorage for Frontend 
     const verifyToken = async (req, res, next) => {
       if (!req.headers.authorization) {
         res.status(401).send({ message: "unauthorized" });
@@ -85,6 +87,55 @@ async function run() {
       const result = await photosCollection.find().toArray();
       res.send(result);
     })
+
+
+
+    //  -----------Product  Collection start -----------
+    app.get("/api/v1/all-product", async (req, res) => {
+      const result = await petProductCollection.find().toArray();
+      res.send(result);
+    });
+
+     // get by id
+     app.get("/api/v1/all-product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petProductCollection.findOne(query);
+      res.send(result);
+    });
+
+    //  -----------Product  Collection end -----------'
+
+
+
+    //  -----------Cart  Collection start -----------
+     //  add post for Normal user
+     app.post("/api/v1/add-to-cart", async (req, res) => {
+      const petInfo = req.body;
+      const result = await petsCartCollection.insertOne(petInfo);
+      res.send(result);
+    });
+
+    // / get by cart user email
+    app.get("/api/v1/all-cart", async (req, res) => {
+      const email = req.query.email;
+      let obj = {}
+      if (email) {
+        obj.email = email;
+      }
+      const result = await petsCartCollection.find(obj).toArray();
+      res.send(result);
+    });
+     // delete for user
+     app.delete("/api/v1/all-cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await petsCartCollection.deleteOne(query);
+      res.send(result);
+     });
+    
+        //  -----------Cart  Collection end-------------------
+    
 
 
     // ---------------------------PetCollection  Works Start--------------------------
@@ -567,10 +618,10 @@ async function run() {
     //---------------------------------------------------------
 
 
-    // await client.db("admin").command({ ping: 1 });
-    // console.log(
-    //   "Pinged your deployment. You successfully connected to MongoDB!"
-    // );
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
 
 
   } finally {
